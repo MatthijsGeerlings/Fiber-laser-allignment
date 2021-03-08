@@ -1,11 +1,12 @@
 '''Code 1.7'''
 
 
-def code1dot7(npy_file,n_value = 0.001,power=2):
+def code1dot7(npy_file,n_value = 0.001,power=5):
     '''This code requires a npy_file as input, the n_value decides which fraction of pixels is 
     considered 'bright' and power is the number to which the multiplication matrix is raised. 
-    The n_value is put on 0.001 by default and the power is put on 2 by default, 
-    which for now seem to be the best values.
+    The n_value is put on 0.001 by default and the power is put on 5 by default, 
+    which for now seem to be the best values (power values of 4 and 6 yield the same result
+    as a value 5, 5 is chosen because it lays in middle of 4, 5 and 6).
     
     This function is almost exactly the same as code 1.6 (see description below), the difference
     is, that in this code the 'multiplication matrix' has small values towards all edges and not just
@@ -39,24 +40,28 @@ def code1dot7(npy_file,n_value = 0.001,power=2):
     from copy import copy
     import PIL   
  
+    'Width and height of numpy array'
     width = 960   
     height = 1280
     
     '''Below multiply_array_one is created, this in an array with high values towards the vertical 
     midpoint and small values towards the top and bottom of the matrix'''
     multiply_array_one = (linspace(2,0,width*height).reshape(height,width)*\
-        linspace(0,2,width*height).reshape(height,width))**power
+        linspace(0,2,width*height).reshape(height,width))
     
     
     '''Below multiply_array_two is created, this is an array with high values towards the horizontal
     midpoint and small values towards the left and right edges of the picture'''
     multiply_array_two = (linspace(2,0,width*height).reshape(width,height)*\
-        linspace(0,2,width*height).reshape(width,height))**power
-    'Rotating multiply_array_two, so it can be multiplied with multiply_array_one'
+        linspace(0,2,width*height).reshape(width,height))
+    'Rotating multiply_array_two by 90 degrees, so it can be multiplied with multiply_array_one'
     multiply_array_two_rot = rot90(multiply_array_two)
     
     'Creating the multiply array'
     multiply_array = multiply_array_one*multiply_array_two_rot
+    
+    '''Raising multiply array to a power, so the relative difference in brightness between the edges
+    and the middel gets bigger'''
     multiply_array = multiply_array**power
     
     time_one = time.time()
@@ -112,7 +117,8 @@ def code1dot7(npy_file,n_value = 0.001,power=2):
         binary_copy = copy(np_array_binary)
         bright_coords_copy = copy(bright_coords)
     
-        'In this for loop, for eacht pixel the number of bright (direct) neighbors is determined'
+        '''In this for loop, for eacht bright pixel the number of bright (direct) neighbors is 
+        determined''' 
         for i in bright_coords:
             bright_neighbors = 0
             if np_array_binary[i[0]-1][i[1]] == 1:
