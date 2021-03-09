@@ -6,7 +6,7 @@ def code1dot7(npy_file,n_value = 0.001,power=5):
     considered 'bright' and power is the number to which the multiplication matrix is raised. 
     The n_value is put on 0.001 by default and the power is put on 5 by default, 
     which for now seem to be the best values (power values of 4 and 6 yield the same result
-    as a value 5, 5 is chosen because it lays in middle of 4, 5 and 6).
+    as a value of 5, 5 is chosen because it lays in the middle of 4, 5, and 6).
     
     This function is almost exactly the same as code 1.6 (see description below), the difference
     is, that in this code the 'multiplication matrix' has small values towards all edges and not just
@@ -36,9 +36,10 @@ def code1dot7(npy_file,n_value = 0.001,power=5):
     
     'required imports'
     import time
-    from numpy import percentile, where, load, linspace, rot90
+    from numpy import percentile, where, load, linspace, rot90,ones
     from copy import copy
     import PIL   
+    from PIL import ImageEnhance
  
     'Width and height of numpy array'
     width = 960   
@@ -74,11 +75,13 @@ def code1dot7(npy_file,n_value = 0.001,power=5):
     
     'Determination of the threshold value'
     threshold = round(percentile(array,(100-(100*n_value)),interpolation='nearest'))
+    print('Threshold',threshold)
 
     ''' Below a binary array is created, pixels above the threshold get assigned the value 1 and 
     pixels below the threshold get assigned the value 0'''
     np_array_binary = where(array>threshold,1,0)
 
+    
     'The lines of code below put the edges of the image to 0'
     'Puts the top column to 0'
     np_array_binary[0,:] = 0 
@@ -88,7 +91,8 @@ def code1dot7(npy_file,n_value = 0.001,power=5):
     np_array_binary[:,0] = 0
     'Puts the right column to zero'
     np_array_binary[:,-1] = 0    
-
+    
+ 
     'Determination of the bright pixel locations'
     bright_pixel_locations = where(np_array_binary == 1)
 
@@ -170,18 +174,26 @@ def code1dot7(npy_file,n_value = 0.001,power=5):
     x = round(x/len(bright_coords))
     y = round(y/len(bright_coords))
     print(x,y)
+    '''Above the x and y coordinates are pritned. Everythin happening from here, is just to 
+    represent the results obtained, and is independent of the algorithm'''
+    
     print('Time required to find core',round(1000*(time.time()-time_one)),'ms')
-    #return([x,y])  
+
+
 
     'Creating image with the core marked'
-    Image = PIL.Image.fromarray(load(npy_file))
-    for i in range(Image.size[1]):
-        Image.putpixel((x,i),(255))
+    Image1 = PIL.Image.fromarray(load(npy_file))
+    Image2 = copy(Image1)
+    for i in range(Image2.size[1]):
+        Image2.putpixel((x,i),(255))
     
-    for i in range(Image.size[0]):
-        Image.putpixel((i,y),(255))
+    for i in range(Image2.size[0]):
+        Image2.putpixel((i,y),(255))
     #Image.show()
-    return(Image)
+    
+    enhancer1 = ImageEnhance.Contrast(Image1)
+    #Image1 = enhancer1.enhance(100)
+    return Image1, Image2
 
 'Performing the protocol on every numpy array in the map'
 import os
@@ -193,9 +205,9 @@ for f in os.listdir('.'):
         fn, fext = os.path.splitext(f)
         print(fn)
         #time_one = time.time()
-        i =code1dot7(f)
-        j = PIL.Image.open(fn+'_copy.jpg')
-        j.save('Centers_found_with_code_1_dot_7\{}.jpg'.format(fn))
-        i.save('Centers_found_with_code_1_dot_7\{}_core_marked.png'.format(fn))
+        i,j =code1dot7(f)
+
+        i.save('Centers_found_with_1.7\{}.jpg'.format(fn))
+        j.save('Centers_found_with_1.7\{}_core_marked.png'.format(fn))
         #print(f,'Time required',round(1000*(time.time()-time_one)),'ms')
         print('------------------------------------')    
