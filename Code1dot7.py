@@ -1,12 +1,12 @@
 '''Code 1.7'''
 
 
-def code1dot7(npy_file,n_value = 0.001,power=5):
+def code1dot7(npy_file,n_value = 0.001,power=2.5):
     '''This code requires a npy_file as input, the n_value decides which fraction of pixels is 
     considered 'bright' and power is the number to which the multiplication matrix is raised. 
-    The n_value is put on 0.001 by default and the power is put on 5 by default, 
-    which for now seem to be the best values (power values of 4 and 6 yield the same result
-    as a value of 5, 5 is chosen because it lays in the middle of 4, 5, and 6).
+    The n_value is put on 0.001 by default and the power is put on 2.5 by default, 
+    which for now seem to be the best values (power values of 2 and 3 yield the same result
+    as a value of 2.5, 2.5 is chosen because it lays in the middle of 2 and 3).
     
     This function is almost exactly the same as code 1.6 (see description below), the difference
     is, that in this code the 'multiplication matrix' has small values towards all edges and not just
@@ -36,7 +36,7 @@ def code1dot7(npy_file,n_value = 0.001,power=5):
     
     'required imports'
     import time
-    from numpy import percentile, where, load, linspace, rot90,ones
+    from numpy import percentile, where, load, linspace, rot90, ones, flip
     from copy import copy
     import PIL   
     from PIL import ImageEnhance
@@ -45,30 +45,35 @@ def code1dot7(npy_file,n_value = 0.001,power=5):
     width = 960   
     height = 1280
     
-    '''Below multiply_array_one is created, this in an array with high values towards the vertical 
-    midpoint and small values towards the top and bottom of the matrix'''
-    multiply_array_one = (linspace(2,0,width*height).reshape(height,width)*\
-        linspace(0,2,width*height).reshape(height,width))
+    '''Below multiply_array_one is created this is an array with the same dimensions as the 
+    'image'. This array goes from 2 (upper left corner) to 0 (lower right corner) with equal steps 
+    '''
+    multiply_array_one = (linspace(2,0,width*height).reshape(height,width))
+
+    '''Below multiply_array_one is redefined as an array with small values towards the vertical
+    edges and big values towards the vertical middle (the function is symmetric in the horizontal
+    direction)'''
+    multiply_array_one = multiply_array_one*flip(multiply_array_one ,1)*\
+        rot90(rot90(multiply_array_one))*flip(rot90(rot90(multiply_array_one)),1)
     
+    multiply_array_two = (linspace(2,0,width*height).reshape(width,height))
+    multiply_array_two = multiply_array_two*flip(multiply_array_two ,1)*\
+        rot90(rot90(multiply_array_two))*flip(rot90(rot90(multiply_array_two)),1)
+                
+    '''Creating an array with big values towards the middle (aaoriachin 1) and small values 
+    towards the edges (approachin 0)'''
+    multiply_array = multiply_array_one * rot90(multiply_array_two)
     
-    '''Below multiply_array_two is created, this is an array with high values towards the horizontal
-    midpoint and small values towards the left and right edges of the picture'''
-    multiply_array_two = (linspace(2,0,width*height).reshape(width,height)*\
-        linspace(0,2,width*height).reshape(width,height))
-    'Rotating multiply_array_two by 90 degrees, so it can be multiplied with multiply_array_one'
-    multiply_array_two_rot = rot90(multiply_array_two)
-    
-    'Creating the multiply array'
-    multiply_array = multiply_array_one*multiply_array_two_rot
-    
-    '''Raising multiply array to a power, so the relative difference in brightness between the edges
-    and the middel gets bigger'''
+    '''Below the multiply_array is raised to  a power (see function input), to increase the relative 
+    difference between the high and low values '''
     multiply_array = multiply_array**power
+    
     
     time_one = time.time()
     
     'Loading of npy_file'
     np_array_original = load(npy_file)
+    print(type(np_array_original))
     
     '''Below 'array' is created, which is the product of the multiply_array and the original array'''
     array = (np_array_original*multiply_array).astype(int)
