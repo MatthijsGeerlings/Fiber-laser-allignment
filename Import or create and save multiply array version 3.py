@@ -5,28 +5,22 @@ import PIL
 import time
 
 def import_or_create_and_save_multiply_array_version_3(width,height,mu_x = -1,\
-                                                       mu_y = -1, sigma_x = -1, sigma_y = -1, A = 255 ):    
+                                                       mu_y = -1, sigma_x = -1, sigma_y = -1, C = 50 ):    
     '''In this function the multiply array is saved in a folder in the home path. The multiply array
     is created with a gausian function, so the center (of highest values) can be easily modified.
-    All the ellements of the multiply array are integers.'''
+    All the ellements in the multiply array are integers.'''
     
-    # mu_x value of the gausian function is defined in the middle, if no value is provided as an
-    #input
     if mu_x == -1:
-        mu_x = int(width/2)
-        
-    # mu_y value of the gausian function is defined in the middle, if no value is provided as an
-    #input
-    if mu_y == -1:
-        mu_y = int(height/2)
+        mu_x = width/2
     
-    #If no value for sigma_x is entered, it is defined as 1 fifth of the width
     if sigma_x == -1:
-        sigma_x = width/5
+        sigma_x = min(width,height)/5
     
-    #If no value for sigma_y is entered, it is defined as 1 fifth of the height
+    if mu_y == -1:
+        mu_y = height/2
+    
     if sigma_y == -1:
-        sigma_y = height/5
+        sigma_y = min(width,height)/5
     
     
     #home_path is the path to the home folder
@@ -42,7 +36,7 @@ def import_or_create_and_save_multiply_array_version_3(width,height,mu_x = -1,\
     file_path = config_path.joinpath('multpiply_array_'+'width_'+str(width)+'_'+'height_'\
                     +str(height)+'_x_center_'+str(mu_x)+'_y_center_'+str(mu_y)+\
                     '_standard_deviation_x_'+str(sigma_x)+'_standard_deviation_y_'+str(sigma_y)+\
-                    '_Amplitude_'+str(A)+'.npy')
+                    '_C_'+str(C)+'.npy')
 
     
     #Trying if file exists with file_path
@@ -57,79 +51,35 @@ def import_or_create_and_save_multiply_array_version_3(width,height,mu_x = -1,\
         print("File non existing in folder")
         print('Creating multiply array with dimensions:',[width,height])
         
+        zeros = np.zeros((100,100))
+
+        #redifiening mu and sigma for x and y to fit in the 100 by 100 array
+        mu_x = mu_x*100/width
+        mu_y = mu_y*100/height
+        sigma_x = sigma_x*100/width
+        sigma_y = sigma_y*100/height
         
-        #Two temporary lines of code
-        global gauss_x
-        global gauss_y
+        e = 2.718281828
+        A = 255-C
         
-        
-        #Creating x gaussian
-        
-        #Determening x_devider
-        dividers = [width]
-        results = [abs(width-100)]
-        for i in range(1,int(width/2)):
-            if width%i == 0:
-                dividers.append(i)
-                results.append(int(abs(100-width/i)))
-        x_divider = dividers[results.index(min(results))]      
-        
-        # Redefining mu_x and sigma_x
-        mu_x = mu_x/x_divider
-        sigma_x = sigma_x/x_divider
-        
-        #Defining x_range (size of the x gaussian)
-        x_range = range(int(width/x_divider))
-        
-        # List containing the values of the gausian in the x direction
-        gauss_x = []
-        
-        for i in x_range:
-            gauss_x.append(int(A*2.718281828**(-((i-mu_x)**2/(sigma_x)**2))))
-        
-        #Converting gauss_x into a numpy array
-        gauss_x = np.array(gauss_x)
-        
-        
-        #Creating y gaussian
-        
-        #Determening y devider
-        dividers = [height]
-        results = [abs(height-100)]
-        for i in range(1,int(height/2)):
-            if height%i == 0:
-                dividers.append(i)
-                results.append(int(abs(100-width/i)))
-        y_divider = dividers[results.index(min(results))]        
-        
-        # Redefining mu_y and sigma_y
-        mu_y = mu_y/y_divider
-        sigma_y = sigma_y/y_divider
-        
-        #Defining y_range (size of the y gaussian)
-        y_range = range(int(height/y_divider))
-        
-        # List containing the values of the gausian in the y direction
-        gauss_y = []
-        
-        for i in y_range:
-            gauss_y.append(int(A*2.718281828**(-((i-mu_y)**2/(sigma_y)**2))))
-        
-        #Converting gauss_y into a numpy array
-        gauss_y = np.array(gauss_y)
+        for i in range(100):
+            for j in range(100):
+                zeros[i][j] = int((A*e**-(((j-mu_x)/(sigma_x))**2)*A*e**-(((i-mu_y)/(sigma_y))**2\
+                                                                          ))**0.5+C)
+                
+        multiply_array = zeros
     
-        multiply_array = (np.dot(gauss_x[:,None],gauss_y[None,:]))**0.5
-        multiply_array = cv2.resize(multiply_array,(width,height))
+
+        multiply_array = cv2.resize(multiply_array,(width,height)).astype('int8')
         
-        multiply_array = multiply_array.astype('int16')
-    
+        #PIL.Image.fromarray(multiply_array).show()
         print('Save multiply array')
         np.save(file_path,multiply_array)
-
     return multiply_array
 
 time_one = time.time()
-array = import_or_create_and_save_multiply_array_version_3(960, 1280,600,500,96,128)
+array = import_or_create_and_save_multiply_array_version_3(960, 1280)
+print('dtype',array.dtype)
 print('Time elapsed',round(1000*(time.time()-time_one)),'ms')
 
 PIL.Image.fromarray(np.array(array)).show()
